@@ -1,1 +1,87 @@
-Hello World
+<!DOCTYPE html>
+<html>
+<head>
+
+	<script src="https://code.jquery.com/jquery-1.10.1.min.js"></script>
+	<link rel="preconnect" href="https://fonts.gstatic.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100&display=swap" rel="stylesheet">
+
+	<link rel="stylesheet" type="text/css" href="/css/app.css" />
+
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta charset="utf-8">
+	<title>Stream Scheduler</title>
+
+
+</head>
+<body>
+
+<div class="main">
+
+	<h1> Live Stream Pre Records </h1>
+
+	<label class="center">Source File URL</label>
+	<input id="file" type="text" name="link" value="https://stream.mux.com/v2liKaiT4rwmkzPXhU2wFy01SU7xYsosQB2tCidJIp84.m3u8">
+	<br>
+	<br>
+	<label>Destination RTMP URL</label>
+	<input id="rtmp" type="text" name="rtmp" value="rtmp://live.venuo.co.uk:5222/app">
+	<br>
+	<label>Stream Key</label>
+	<input id="key" type="text" name="key" value="13a8590a-2da0-e8af-0527-735bc533d71e">
+	<br>
+	<br>
+	<button id="start" class="button" onclick="ffmpeg()">Start Streaming</button>
+
+	<p> Console Logs: </p>
+	<div class="lower">
+
+	</div>
+	<br>
+	<p>Want to automate this with a schedule, get your own source file URL or stream for longer than 30 mins? Try the full version.</p>
+
+</div>
+
+</body>
+</html>
+
+<script type="text/javascript">
+
+
+	async function ffmpeg() {
+		event.preventDefault()
+
+		var stream = {
+			file: document.getElementById("file").value,
+			rtmp: document.getElementById("rtmp").value,
+			key: document.getElementById("key").value,
+		}
+		
+
+		console.log(1, stream)
+
+		var response = await fetch('/ffmpeg', {
+			method: 'POST',
+			headers: {
+				'Content-Type' : 'application/json'
+			},
+			body: JSON.stringify(stream)
+		});
+
+
+
+		var body = await response.json();
+
+		console.log(3, body)
+
+		if(body.error){
+			return alert(body.error)
+		}
+
+		if(!body){
+			return alert("server failed to respond")
+		} else alert(body)
+
+	}
+	
+</script>

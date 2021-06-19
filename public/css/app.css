@@ -1,0 +1,38 @@
+body {
+	background-color: white;
+	background-image: url("https://ik.imagekit.io/venuo/venuo-landing-background_04XihCln2aD.svg");
+}
+
+
+.main {
+	display: flex;
+	flex-flow: column;
+	max-width: 600px;
+	margin: auto;
+	font-family: 'Montserrat', sans-serif;
+	background-color: white;
+	padding: 15px;
+	border-radius: 5px;
+}
+
+.lower {
+	border: solid;
+	border-color: gray;
+	border-width: 1px;
+	min-height: 60px;
+	max-height: 50%;
+	padding: 15px;
+	display: flex;
+	flex-flow: column;
+	border-radius: 5px;
+}
+
+.button {
+	background-color: black;
+	color: white;
+	border-radius: 5px;
+	border-width: 0px;
+	border-color: black;
+	padding: 15px;
+	cursor: pointer;
+}
