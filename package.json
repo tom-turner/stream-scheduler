@@ -24,11 +24,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tom-turner/toms-boilerplate.git"
+    "url": "git+https://github.com/tom-turner/stream-scheduler.git"
   },
   "bugs": {
-    "url": "https://github.com/tom-turner/toms-boilerplate/issues"
+    "url": "https://github.com/tom-turner/stream-scheduler/issues"
   },
-  "homepage": "https://github.com/tom-turner/toms-boilerplate#readme",
+  "homepage": "https://github.com/tom-turner/stream-scheduler#readme",
   "description": ""
 }
