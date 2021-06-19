@@ -20,8 +20,6 @@ app.post('/ffmpeg', function (req, res) {
 ffmpeg()
   .input(req.body.file)
   .videoCodec('libx264')
-  .videoBitrate('4500k')
-  .size('1920x1080')
   .format('flv')
   .save(req.body.rtmp+'/'+req.body.key)
 
