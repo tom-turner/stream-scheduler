@@ -15,42 +15,52 @@ app.get('/', function (req, res) {
   res.render('index.ejs');
 });
 
-var ffmpegLogs = [];
+// add this to socket.io var ffmpegLogs = [];
+
+function formatResponse(started, message) {
+  return JSON.stringify({
+    started: started,
+    message: message
+  }) + "\n"
+}
 
 app.post('/ffmpeg', function (req, res) {
 
 if(!req.body.file || !req.body.rtmp || !req.body.key) {
-  return res.write("invalid input")
+  return res.write(formatResponse(false, "Invalid Input"))
 }
 
-res.write("received")
+res.write(formatResponse(false, "recieved"))
 
 ffmpeg()
   .input(req.body.file)
+  .inputOption('-re')
+  .videoBitrate('4500k')
   .format('flv')
   .save(req.body.rtmp+'/'+req.body.key)
 
+
   .on('stderr', function(stderrLine) {
     console.log('Stderr output: ' + stderrLine);
-    res.write('Stderr output: ' + stderrLine)
+    res.write(formatResponse(false, 'Error: ' + stderrLine))
   }) 
 
   .on('start', function(commandLine) {
     console.log('Spawned Ffmpeg with command: ' + commandLine)
     
-    ffmpegLogs = 'Spawned Ffmpeg with command: ' + commandLine;
+   // sends logs to socket.io - ffmpegLogs = 'Spawned Ffmpeg with command: ' + commandLine;
 
-    res.write(JSON.stringify({"started": true, message: 'Spawned Ffmpeg with command: ' + commandLine}))
+    res.write(formatResponse(true, 'Spawned Ffmpeg with command: ' + commandLine))
   })
 
   .on('progress', function(progress) {
     console.log('Processing: ' + progress.percent + '% done')
-    res.write('Processing: ' + progress.percent + '% done')
+    res.write(formatResponse(true, 'Processed: ' + progress.percent + '%'))
   })
 
   .on('error', function(err, stdout, stderr) {
     console.log('Cannot process video: ' + err.message);
-      return res.write('Cannot process video: ' + err.message)
+    res.write(formatResponse(false, 'Cannot process video: ' + err.message))
   })
   
 })

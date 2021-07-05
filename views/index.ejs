@@ -25,13 +25,13 @@
 	<h1 class="text-3xl font-bold"> Live Premier </h1>
 	<br>
 	<label class="center">Source File URL</label>
-	<input id="file" class="w-full border rounded" type="text" name="link" placeholder="https://example.com/myfile.m3u8">
+	<input id="file" class="w-full border rounded" type="text" name="link" placeholder="https://example.com/myfile.m3u8" value="https://player.vimeo.com/external/556322608.hd.mp4?s=d9924c8fbf729215a8722211eeef85ac64bca637&profile_id=175">
 	<br>
 	<label>Destination RTMP URL</label>
-	<input id="rtmp" class="w-full border rounded" type="text" name="rtmp" placeholder="rtmp://live.venuo.co.uk:5222/app">
+	<input id="rtmp" class="w-full border rounded" type="text" name="rtmp" placeholder="rtmp://live.venuo.co.uk:5222/app" value="rtmp://live.venuo.co.uk:5222/app">
 	<br>
 	<label>Stream Key</label>
-	<input id="key" class="w-full border rounded" type="text" name="key" placeholder="">
+	<input id="key" class="w-full border rounded" type="text" name="key" placeholder="" value="aea6b9f4-b937-09ad-440e-8dd35d6c236a">
 	<br>
 	<br>
 	<button id="start" class="bg-gradient-to-r from-yellow-400 via-red-500 to-pink-500 text-white rounded w-full p-2 h-10 shadow-md hover:shadow-sm hover:opacity-80" onclick="ffmpeg()">
@@ -83,22 +83,22 @@
 		var reader = await response.body.getReader();
 		var done = false
 
+
 		loading(false)
 
-		while(!done){
+		while(!done) {
 			var res = await reader.read()
+			var string = String.fromCharCode.apply(null, res.value)
+			var lines = string.split("\n")
+			console.log(lines)
 
-			var log = JSON.parse(String.fromCharCode.apply(null, res.value))
-			var newLi = document.createElement("li")
-
-			newLi.innerHTML = '<p class="my-2">'+log+'</p>'
-
-			document.getElementById('logs').append(newLi)
-
-			done = res.done
-			
-			}
-
+			lines.filter(line => line !== '').forEach(line => {
+				var log = JSON.parse(line)
+				var newLi = document.createElement("li")
+				newLi.innerHTML = '<p class="my-2">'+log.message+'</p>'
+				document.getElementById('logs').append(newLi)
+			})
+		}
 	}
 
 
