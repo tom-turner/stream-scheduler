@@ -5,7 +5,6 @@
     "express": "^4.17.1",
     "ffmpeg": "^0.0.4",
     "fluent-ffmpeg": "^2.1.2",
-    "jquery": "^3.6.0",
     "node.js": "^0.0.1-security",
     "socket.io": "^4.1.2"
   },
@@ -15,7 +14,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "yarn build:css && node ./bin/www",
-    "build:css": "npx postcss public/css/tailwind.css -o public/css/app.css"
+    "build:css": "postcss public/css/tailwind.css -o public/css/app.css"
   },
   "author": "tom turner",
   "license": "ISC",
