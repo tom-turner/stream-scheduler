@@ -5,6 +5,7 @@ const port = process.env.port || 5000;
 const bp = require('body-parser');
 var ffmpeg = require('fluent-ffmpeg');
 var command = ffmpeg();
+var getStreamableUrl = require('./scripts/get-streamable-url')
 
 app.use(bp.json())
 app.use(bp.urlencoded({ extended: true }))
@@ -25,28 +26,27 @@ function formatResponse(started, message) {
   }) + "\n"
 }
 
+
 function getNewId(){
   var id = Math.random()
   return id
 } 
 
-console.log(getNewId())
+app.post('/ffmpeg', async function (req, res) {
+  if(!req.body.file || !req.body.rtmp || !req.body.key) {
+    return res.write(formatResponse(false, "Invalid Input"))
+  }
 
-app.post('/ffmpeg', function (req, res) {
 
-if(!req.body.file || !req.body.rtmp || !req.body.key) {
-  return res.write(formatResponse(false, "Invalid Input"))
-}
+  res.write(formatResponse(false, "recieved"))
 
-res.write(formatResponse(false, "recieved"))
-
-ffmpeg()
-  .input(req.body.file)
-  .inputOption('-re')
+  var stream = ffmpeg()
+  var inputs = await getStreamableUrl(req.body.file)
+  inputs.forEach(input => stream.input(input))
+  stream.inputOption('-re')
   .videoBitrate('4500k')
   .format('flv')
   .save(req.body.rtmp+'/'+req.body.key)
-
 
   .on('stderr', function(stderrLine) {
     console.log('Stderr output: ' + stderrLine);
@@ -55,9 +55,6 @@ ffmpeg()
 
   .on('start', function(commandLine) {
     console.log('Spawned Ffmpeg with command: ' + commandLine)
-    
-   // sends logs to socket.io - ffmpegLogs = 'Spawned Ffmpeg with command: ' + commandLine;
-
     res.write(formatResponse(true, 'Started with command: ' + commandLine))
   })
 
@@ -70,7 +67,7 @@ ffmpeg()
     console.log('Cannot process video: ' + err.message);
     res.write(formatResponse(false, 'Cannot process video: ' + err.message))
   })
-  
+
 })
 
 app.post('/stop', function (req, res) {
