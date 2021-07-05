@@ -15,32 +15,49 @@ app.get('/', function (req, res) {
   res.render('index.ejs');
 });
 
+var ffmpegLogs = [];
+
 app.post('/ffmpeg', function (req, res) {
+
+if(!req.body.file || !req.body.rtmp || !req.body.key) {
+  return res.write("invalid input")
+}
+
+res.write("received")
 
 ffmpeg()
   .input(req.body.file)
-  .videoCodec('libx264')
   .format('flv')
   .save(req.body.rtmp+'/'+req.body.key)
 
   .on('stderr', function(stderrLine) {
     console.log('Stderr output: ' + stderrLine);
-  })
+    res.write('Stderr output: ' + stderrLine)
+  }) 
 
   .on('start', function(commandLine) {
     console.log('Spawned Ffmpeg with command: ' + commandLine)
+    
+    ffmpegLogs = 'Spawned Ffmpeg with command: ' + commandLine;
+
+    res.write(JSON.stringify({"started": true, message: 'Spawned Ffmpeg with command: ' + commandLine}))
   })
 
   .on('progress', function(progress) {
     console.log('Processing: ' + progress.percent + '% done')
+    res.write('Processing: ' + progress.percent + '% done')
   })
 
   .on('error', function(err, stdout, stderr) {
     console.log('Cannot process video: ' + err.message);
-      return res.json({ error : 'Cannot process video: ' + err.message})
+      return res.write('Cannot process video: ' + err.message)
   })
-
+  
 })
+
+app.post('/stop', function (req, res) {
+
+});
 
 //
 // Starting the App

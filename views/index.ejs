@@ -3,6 +3,7 @@
 <head>
 
 	<script src="https://code.jquery.com/jquery-1.10.1.min.js"></script>
+
 	<link rel="preconnect" href="https://fonts.gstatic.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100&display=swap" rel="stylesheet">
 
@@ -15,31 +16,42 @@
 
 
 </head>
-<body>
+<body style=" background-image: url('https://ik.imagekit.io/venuo/venuo-landing-background_04XihCln2aD.svg') ">
 
-<div class="main">
+	<div class="h-screen flex">
 
-	<h1> Live Stream Pre Records </h1>
+<div class="text-center max-w-md mx-auto border rounded-md p-4 shadow-lg flex-grow m-4 flex flex-col bg-white">
 
-	<label class="center">Source File URL</label>
-	<input id="file" type="text" name="link" value="https://stream.mux.com/v2liKaiT4rwmkzPXhU2wFy01SU7xYsosQB2tCidJIp84.m3u8">
+	<h1 class="text-3xl font-bold"> Live Premier </h1>
 	<br>
+	<label class="center">Source File URL</label>
+	<input id="file" class="w-full border rounded" type="text" name="link" placeholder="https://example.com/myfile.m3u8">
 	<br>
 	<label>Destination RTMP URL</label>
-	<input id="rtmp" type="text" name="rtmp" value="rtmp://live.venuo.co.uk:5222/app">
+	<input id="rtmp" class="w-full border rounded" type="text" name="rtmp" placeholder="rtmp://live.venuo.co.uk:5222/app">
 	<br>
 	<label>Stream Key</label>
-	<input id="key" type="text" name="key" value="13a8590a-2da0-e8af-0527-735bc533d71e">
+	<input id="key" class="w-full border rounded" type="text" name="key" placeholder="">
 	<br>
 	<br>
-	<button id="start" class="button" onclick="ffmpeg()">Start Streaming</button>
-
+	<button id="start" class="bg-gradient-to-r from-yellow-400 via-red-500 to-pink-500 text-white rounded w-full p-2 h-10 shadow-md hover:shadow-sm hover:opacity-80" onclick="ffmpeg()">
+	 <span id="button-text">Start Streaming</span>
+	 <svg id="spinner" class="hidden w-5 mx-auto animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+	</button>
+	<br>
+	<br>
 	<p> Console Logs: </p>
-	<div class="lower">
+	<div class="border rounded flex-grow overflow-scroll">
+
+		<ul id="logs" class="w-full flex flex-col-reverse">
+
+		</ul>
 
 	</div>
-	<br>
-	<p>Want to automate this with a schedule, get your own source file URL or stream for longer than 30 mins? Try the full version.</p>
+</div>
 
 </div>
 
@@ -51,6 +63,7 @@
 
 	async function ffmpeg() {
 		event.preventDefault()
+		loading(true)
 
 		var stream = {
 			file: document.getElementById("file").value,
@@ -58,8 +71,6 @@
 			key: document.getElementById("key").value,
 		}
 		
-
-		console.log(1, stream)
 
 		var response = await fetch('/ffmpeg', {
 			method: 'POST',
@@ -69,20 +80,38 @@
 			body: JSON.stringify(stream)
 		});
 
+		var reader = await response.body.getReader();
+		var done = false
 
+		loading(false)
 
-		var body = await response.json();
+		while(!done){
+			var res = await reader.read()
 
-		console.log(3, body)
+			var log = JSON.parse(String.fromCharCode.apply(null, res.value))
+			var newLi = document.createElement("li")
 
-		if(body.error){
-			return alert(body.error)
-		}
+			newLi.innerHTML = '<p class="my-2">'+log+'</p>'
 
-		if(!body){
-			return alert("server failed to respond")
-		} else alert(body)
+			document.getElementById('logs').append(newLi)
+
+			done = res.done
+			
+			}
 
 	}
+
+
+var loading = function(isLoading) {
+  if (isLoading) {
+    document.getElementById("start").disabled = true;
+    document.getElementById("spinner").classList.remove("hidden");
+    document.getElementById("button-text").classList.add("hidden")
+  } else {
+    document.getElementById("start").disabled = false;
+    document.getElementById("spinner").classList.add("hidden");
+    document.getElementById("button-text").classList.remove("hidden");
+  }
+}
 	
 </script>
