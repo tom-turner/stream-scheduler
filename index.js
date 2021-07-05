@@ -20,9 +20,17 @@ app.get('/', function (req, res) {
 function formatResponse(started, message) {
   return JSON.stringify({
     started: started,
-    message: message
+    message: message,
+    finished: false
   }) + "\n"
 }
+
+function getNewId(){
+  var id = Math.random()
+  return id
+} 
+
+console.log(getNewId())
 
 app.post('/ffmpeg', function (req, res) {
 
@@ -42,7 +50,7 @@ ffmpeg()
 
   .on('stderr', function(stderrLine) {
     console.log('Stderr output: ' + stderrLine);
-    res.write(formatResponse(false, 'Error: ' + stderrLine))
+    res.write(formatResponse(false, stderrLine))
   }) 
 
   .on('start', function(commandLine) {
@@ -50,12 +58,12 @@ ffmpeg()
     
    // sends logs to socket.io - ffmpegLogs = 'Spawned Ffmpeg with command: ' + commandLine;
 
-    res.write(formatResponse(true, 'Spawned Ffmpeg with command: ' + commandLine))
+    res.write(formatResponse(true, 'Started with command: ' + commandLine))
   })
 
   .on('progress', function(progress) {
-    console.log('Processing: ' + progress.percent + '% done')
-    res.write(formatResponse(true, 'Processed: ' + progress.percent + '%'))
+    console.log('Processing: ' + progress.timemark)
+    res.write(formatResponse(true, 'Progress: ' + progress.timemark))
   })
 
   .on('error', function(err, stdout, stderr) {
