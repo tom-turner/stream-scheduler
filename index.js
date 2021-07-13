@@ -1,78 +1,127 @@
 const express = require('express');
 const app = express();
 const http = require('http').Server(app);
-const port = process.env.port || 5000;
 const bp = require('body-parser');
-var ffmpeg = require('fluent-ffmpeg');
-var command = ffmpeg();
-var getStreamableUrl = require('./scripts/get-streamable-url')
+const pm2 = require('pm2')
+const io = require('socket.io')(http);
+const port = process.env.port || 5000;
+const sessionTimeoutInMs = 3000 || 10800000
 
 app.use(bp.json())
 app.use(bp.urlencoded({ extended: true }))
-
 app.use(express.static(__dirname + '/public'));
 
 app.get('/', function (req, res) {
   res.render('index.ejs');
 });
 
-// add this to socket.io var ffmpegLogs = [];
+io.on('connection', (socket) => {
 
-function formatResponse(started, message) {
-  return JSON.stringify({
-    started: started,
-    message: message,
-    finished: false
-  }) + "\n"
+  socket.on("join", (sessionId)=> {
+    console.log("user joined " + sessionId)
+    socket.join(sessionId)
+
+    var processName = sessionId
+    checkIfRunning(processName)
+
+  });
+
+  socket.on('disconnect', () => {
+    console.log('user disconnected');
+  });
+});
+
+
+function checkIfRunning(processName){
+
+  console.log("pn" , processName)
+  pm2.describe(processName, (err, data) => {
+
+    if (data !== 'undefined' && data.length > 0) {
+      console.log("data: ", data)
+      sendMessageToClient(processName, "Hello Again", true)
+    } else { 
+      console.log("no data: ", data)
+      sendMessageToClient(processName, "Enter your source file, RTMP URL and Stream Key to get started.", false)
+    }
+    pm2.disconnect()
+  })
+  return 
 }
 
 
-function getNewId(){
-  var id = Math.random()
-  return id
-} 
-
-app.post('/ffmpeg', async function (req, res) {
-  if(!req.body.file || !req.body.rtmp || !req.body.key) {
-    return res.write(formatResponse(false, "Invalid Input"))
+function sendMessageToClient(sessionId, message, online, error) {
+  
+  var data = {
+    message: message,
+    online: online,
+    error: error ? error : false
   }
 
+  console.log(data)
 
-  res.write(formatResponse(false, "recieved"))
+  io.to(sessionId).emit("message", data)
 
-  var stream = ffmpeg()
-  var inputs = await getStreamableUrl(req.body.file)
-  inputs.forEach(input => stream.input(input))
-  stream.inputOption('-re')
-  .videoBitrate('4500k')
-  .format('flv')
-  .save(req.body.rtmp+'/'+req.body.key)
+}
 
-  .on('stderr', function(stderrLine) {
-    console.log('Stderr output: ' + stderrLine);
-    res.write(formatResponse(false, stderrLine))
-  }) 
+function generateNewId() {
+  var result           = '';
+  var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  var charactersLength = characters.length;
+  for ( var i = 0; i < 36; i++ ) {
+    result += characters.charAt(Math.floor(Math.random() * 
+     charactersLength));
+  }
+  return result;
+}
 
-  .on('start', function(commandLine) {
-    console.log('Spawned Ffmpeg with command: ' + commandLine)
-    res.write(formatResponse(true, 'Started with command: ' + commandLine))
+function startFfmpeg(sessionId) {
+
+  pm2.start({
+    name   : sessionId,
+    script: 'ffmpeg.js',
+  }, (err, apps) => {
+    pm2.disconnect()
+    if (err) { 
+      pm2.delete(sessionId)
+      throw err
+    }
   })
+  setTimeout( function() {
+    stopFfmpeg(sessionId); 
+    sendMessageToClient( sessionId, "Session Ended - Your File Is Longer Than 3 Hours", false, true)
+  }, sessionTimeoutInMs );
 
-  .on('progress', function(progress) {
-    console.log('Processing: ' + progress.timemark)
-    res.write(formatResponse(true, 'Progress: ' + progress.timemark))
-  })
+  sendMessageToClient(sessionId, "Started", true)
+  return 
+}
 
-  .on('error', function(err, stdout, stderr) {
-    console.log('Cannot process video: ' + err.message);
-    res.write(formatResponse(false, 'Cannot process video: ' + err.message))
-  })
+function stopFfmpeg(sessionId) {
+  pm2.delete(sessionId)
+  sendMessageToClient(sessionId, "Stopped", false)
+  return
+}
 
+app.post('/startffmpeg', async function (req) {
+  if(!req.body.file || !req.body.rtmp || !req.body.key) {
+    return sendMessageToClient(req.body.sessionId, "Invalid Input")
+  }
+  sendMessageToClient(req.body.sessionId, "Received", false)
+  startFfmpeg(req.body.sessionId)
+  return 
+});
+
+app.post('/stopffmpeg', function (req) {
+  stopFfmpeg(req.body.sessionId)
+  return
+});
+
+// Gives a new user an ID.
+app.post('/newUserId', async function (req, res) {
+  console.log("new user connected")
+  return res.json(generateNewId())
 })
 
-app.post('/stop', function (req, res) {
-
-});
 
 //
 // Starting the App

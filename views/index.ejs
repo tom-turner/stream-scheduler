@@ -4,8 +4,10 @@
 
 	<script src="https://code.jquery.com/jquery-1.10.1.min.js"></script>
 
+	<script src="/socket.io/socket.io.js"></script>
+
 	<link rel="preconnect" href="https://fonts.gstatic.com">
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100&display=swap" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100&display=swap" rel="stylesheet">
 
 	<link rel="stylesheet" type="text/css" href="/css/app.css" />
 
@@ -20,59 +22,103 @@
 
 	<div class="h-screen flex">
 
-<div class="text-center max-w-md mx-auto border rounded-md p-4 shadow-lg flex-grow m-4 flex flex-col bg-white">
+		<div class="text-center max-w-md mx-auto border rounded-md p-4 shadow-lg flex-grow m-4 flex flex-col bg-white">
 
-	<h1 class="text-3xl font-bold"> Live Premier </h1>
-	<br>
-	<label class="center">Source File URL</label>
-	<input id="file" class="w-full border rounded" type="text" name="link" placeholder="https://example.com/myfile.m3u8" value="https://player.vimeo.com/external/556322608.hd.mp4?s=d9924c8fbf729215a8722211eeef85ac64bca637&profile_id=175">
-	<br>
-	<label>Destination RTMP URL</label>
-	<input id="rtmp" class="w-full border rounded" type="text" name="rtmp" placeholder="rtmp://live.venuo.co.uk:5222/app" value="rtmp://live.venuo.co.uk:5222/app">
-	<br>
-	<label>Stream Key</label>
-	<input id="key" class="w-full border rounded" type="text" name="key" placeholder="" value="aea6b9f4-b937-09ad-440e-8dd35d6c236a">
-	<br>
-	<br>
-	<button id="start" class="bg-gradient-to-r from-yellow-400 via-red-500 to-pink-500 text-white rounded w-full p-2 h-10 shadow-md hover:shadow-sm hover:opacity-80" onclick="ffmpeg()">
-	 <span id="button-text">Start Streaming</span>
-	 <svg id="spinner" class="hidden w-5 mx-auto animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-	</button>
-	<br>
-	<br>
-	<p> Console Logs: </p>
-	<div class="border rounded flex-grow overflow-scroll">
+			<h1 class="text-3xl font-bold"> Live Premier </h1>
+			<br>
+			<label class="center">Source File URL</label>
+			<input id="file" class="w-full border rounded" type="text" name="link" placeholder="https://example.com/myfile.m3u8" value="https://player.vimeo.com/external/556322608.hd.mp4?s=d9924c8fbf729215a8722211eeef85ac64bca637&profile_id=175">
+			<br>
+			<label>Destination RTMP URL</label>
+			<input id="rtmp" class="w-full border rounded" type="text" name="rtmp" placeholder="rtmp://live.venuo.co.uk:5222/app" value="rtmp://live.venuo.co.uk:5222/app">
+			<br>
+			<label>Stream Key</label>
+			<input id="key" class="w-full border rounded" type="text" name="key" placeholder="" value="aea6b9f4-b937-09ad-440e-8dd35d6c236a">
+			<br>
+			<br>
+			<button id="start" class="button bg-gradient-to-r from-yellow-400 via-red-500 to-pink-500 text-white rounded w-full p-2 h-10 shadow-md hover:shadow-sm hover:opacity-80" onclick="ffmpeg()">
+				<span id="buttonText" class="button-text">Start Streaming</span>
+				<svg class="spinner hidden w-5 mx-auto animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+					<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+					<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+				</svg>
+			</button>
+			<br>
+			<br>
+			<p> Console Logs: </p>
+			<div class="border rounded flex-grow overflow-scroll">
 
-		<ul id="logs" class="w-full flex flex-col-reverse">
+				<ul id="logs" class="w-full flex flex-col-reverse px-4">
 
-		</ul>
+				</ul>
+
+			</div>
+		</div>
 
 	</div>
-</div>
-
-</div>
 
 </body>
 </html>
 
 <script type="text/javascript">
 
+	var socket = io();
+	joinSocket()
+
+	socket.on("message", (req) => {	
+		displayMessageToUser(req.message)
+
+		if (req.online) {
+			changeButton('Stop Streaming', function () {
+    			stopffmpeg() 
+			})
+		} else {
+			changeButton('Start Streaming', function () {
+    			ffmpeg()
+			})
+		}
+	});
+
+
+	function displayMessageToUser(message) {
+		var newLi = document.createElement("li")
+		newLi.innerHTML = '<p class="my-2">'+message+'</p>'
+		document.getElementById('logs').append(newLi)
+	}
+
+	async function getSessionIdFromStorage() {
+		if (localStorage.getItem('Session ID')) {
+			return localStorage.getItem('Session ID')
+		} else {
+			var sessionId = await getNewSessionIdFromServer()
+			localStorage.setItem('Session ID', sessionId)
+			return sessionId
+		}
+	}
+
+	async function getNewSessionIdFromServer(){
+		var response = await fetch('/newUserId', {
+			method: 'POST',
+		});
+		return await response.json()
+	}
+
+	async function joinSocket() { 
+		socket.emit("join", await getSessionIdFromStorage())
+	}
 
 	async function ffmpeg() {
-		event.preventDefault()
+
 		loading(true)
 
 		var stream = {
 			file: document.getElementById("file").value,
 			rtmp: document.getElementById("rtmp").value,
 			key: document.getElementById("key").value,
+			sessionId: await getSessionIdFromStorage()
 		}
 		
-
-		var response = await fetch('/ffmpeg', {
+		var response = await fetch('/startffmpeg', {
 			method: 'POST',
 			headers: {
 				'Content-Type' : 'application/json'
@@ -80,38 +126,46 @@
 			body: JSON.stringify(stream)
 		});
 
-		var reader = await response.body.getReader();
-		var done = false
-
-
-		loading(false)
-
-		while(!done) {
-			var res = await reader.read()
-			var string = String.fromCharCode.apply(null, res.value)
-			var lines = string.split("\n")
-			console.log(lines)
-
-			lines.filter(line => line !== '').forEach(line => {
-				var log = JSON.parse(line)
-				var newLi = document.createElement("li")
-				newLi.innerHTML = '<p class="my-2">'+log.message+'</p>'
-				document.getElementById('logs').append(newLi)
-			})
-		}
+		return
 	}
 
 
-var loading = function(isLoading) {
-  if (isLoading) {
-    document.getElementById("start").disabled = true;
-    document.getElementById("spinner").classList.remove("hidden");
-    document.getElementById("button-text").classList.add("hidden")
-  } else {
-    document.getElementById("start").disabled = false;
-    document.getElementById("spinner").classList.add("hidden");
-    document.getElementById("button-text").classList.remove("hidden");
-  }
-}
+	async function stopffmpeg() {
+
+		loading(true)
+
+    	var stream = {
+    		sessionId: await getSessionIdFromStorage()
+			}
+
+		fetch('/stopffmpeg', {
+			method: 'POST',
+			headers: {
+				'Content-Type' : 'application/json'
+			},
+			body: JSON.stringify(stream)
+		});
+
+    	return
+	}
+
+
+	var loading = function(isLoading) {
+		if (isLoading) {
+			document.querySelector(".button").disabled = true;
+			document.querySelector(".spinner").classList.remove("hidden");
+			document.querySelector(".button-text").classList.add("hidden")
+		} else {
+			document.querySelector(".button").disabled = false;
+			document.querySelector(".spinner").classList.add("hidden");
+			document.querySelector(".button-text").classList.remove("hidden");
+		}
+	}
+
+	var changeButton = function(text, clickHandler){
+		document.getElementById("buttonText").innerHTML = text
+		document.getElementById("start").onclick = clickHandler
+		loading(false)
+	}
 	
 </script>
