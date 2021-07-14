@@ -68,14 +68,32 @@
 	socket.on("message", (req) => {	
 		displayMessageToUser(req.message)
 
-		if (req.online) {
+		console.log(req.status)
+
+		if (req.status == 'processing') {
+			loading(true)
+		}
+
+		if (req.status == 'streaming') {
+			console.log('streaming')
+			loading(false)
 			changeButton('Stop Streaming', function () {
-    			stopffmpeg() 
-			})
-		} else {
+    			stopffmpeg()
+    		})
+		}
+
+		if (req.status == 'errored') {
+			loading(false)
 			changeButton('Start Streaming', function () {
     			ffmpeg()
-			})
+    		})
+		}
+
+		if (req.status == 'finished') {
+			loading(false)
+			changeButton('Start Streaming', function () {
+    			ffmpeg()	
+    		})
 		}
 	});
 
@@ -125,8 +143,6 @@
 			},
 			body: JSON.stringify(stream)
 		});
-
-		return
 	}
 
 
@@ -145,8 +161,6 @@
 			},
 			body: JSON.stringify(stream)
 		});
-
-    	return
 	}
 
 
@@ -165,7 +179,6 @@
 	var changeButton = function(text, clickHandler){
 		document.getElementById("buttonText").innerHTML = text
 		document.getElementById("start").onclick = clickHandler
-		loading(false)
 	}
 	
 </script>

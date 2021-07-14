@@ -2,11 +2,23 @@ var ffmpeg = require('fluent-ffmpeg');
 var stream = ffmpeg();
 var getStreamableUrl = require('./scripts/get-streamable-url')
 
-console.log("hello")
+process.on('message', function(packet) {
+	console.log(packet.data)
+	replyToServer("Request received: " + packet.data.rtmp + " | " + packet.data.key, 'processing')
+	start(packet.data)
+});
 
-//
-// implement FFMPEG and log responses to main server.
-//
+function replyToServer(message, status){
+	console.log(status + " | " + message)
+	process.send({
+		type : 'process:msg',
+		data : {
+			message : message,
+			status : status,
+			success : true
+		}
+	});
+}
 
 async function start(body) {
 
@@ -18,31 +30,18 @@ async function start(body) {
 	.save(body.rtmp+'/'+body.key)
 
 	.on('start', function(commandLine) {
-		console.log('Spawned Ffmpeg with command: ' + commandLine)
-		res.write(formatResponse(false, 'Started with command: ' + commandLine))
+		replyToServer('Started command', 'processing')
 	})
 
 	.on('progress', function(progress) {
-		console.log('Processing: ' + progress.timemark + ' ' + progress.currentKbps)
-		res.write(formatResponse(
-			true,
-			'Progress: ' + progress.timemark +
-			' | Frames: ' + progress.frames +
-			' | Kbps: ' + progress.currentKbps +
-			' | Fps: ' + progress.currentFps
-			))
+		replyToServer('Progress: ' + progress.timemark + ' | Frames: ' + progress.frames + ' | Kbps: ' + progress.currentKbps + ' | Fps: ' + progress.currentFps, 'streaming' )
 	})
 
 	.on('error', function(err, stdout, stderr) {
-		console.log('Cannot process video: ' + err.message);
-		res.write(formatResponse(false, 'Streaming Stopped: ' + err.message, true, err.message))
-		stream.kill()
+		replyToServer('Streaming Stopped: ' + err.message, 'errored')
 	})
 
 	.on('end', function() {
-		console.log('Finished')
-		res.write(formatResponse(false, 'Finished', true))
-		stream.kill()
-
+		replyToServer("File has ended", 'finished' )
 	})
 }
