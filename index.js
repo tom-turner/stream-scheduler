@@ -1,4 +1,5 @@
 const express = require('express');
+const expressLayouts = require('express-layouts')
 const app = express();
 const http = require('http').Server(app);
 const bp = require('body-parser');
@@ -10,11 +11,18 @@ const sessionTimeoutInMs = 10800000
 app.use(bp.json())
 app.use(bp.urlencoded({ extended: true }))
 app.use(express.static(__dirname + '/public'));
+app.use(expressLayouts);
+app.set('layout', 'application');
+app.set('view engine', 'ejs');
 
+
+
+// Render index.ejs
 app.get('/', function (req, res) {
   res.render('index.ejs');
 });
 
+// Connect to client with Socket.io
 io.on('connection', (socket) => {
 
   socket.on("join", (sessionId)=> {
@@ -32,6 +40,21 @@ io.on('connection', (socket) => {
 });
 
 
+//
+// Functions
+//
+
+function generateNewId() {
+  var result           = '';
+  var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  var charactersLength = characters.length;
+  for ( var i = 0; i < 36; i++ ) {
+    result += characters.charAt(Math.floor(Math.random() * 
+     charactersLength));
+  }
+  return result;
+}
+
 function checkIfRunning(processName){
   pm2.describe(processName, (err, data) => {
 
@@ -45,25 +68,11 @@ function checkIfRunning(processName){
 }
 
 function sendMessageToClient(sessionId, message, status) {
-  
   var data = {
     message: message,
     status: status,
   }
-
   io.to(sessionId).emit("message", data)
-
-}
-
-function generateNewId() {
-  var result           = '';
-  var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  var charactersLength = characters.length;
-  for ( var i = 0; i < 36; i++ ) {
-    result += characters.charAt(Math.floor(Math.random() * 
-     charactersLength));
-  }
-  return result;
 }
 
 function startFfmpeg(data) {
@@ -80,9 +89,17 @@ function startFfmpeg(data) {
       throw err
     }
   })
+
   startTimeoutCounter(sessionId)
   sendMessageToClient(sessionId, "Process initiated", 'processing')
   return 
+}
+
+function startTimeoutCounter(sessionId) {
+  setTimeout( function() {
+    stopFfmpeg(sessionId); 
+    sendMessageToClient( sessionId, "Session Ended - Your File Is Longer Than 3 Hours", 'finished')
+  }, sessionTimeoutInMs );
 }
 
 function connectToProcess(data) {
@@ -116,7 +133,7 @@ function connectToProcess(data) {
             sessionId, 
             packet.data.message, 
             packet.data.status, 
-          )
+            )
           if (packet.data.status === 'errored'){
             stopFfmpeg(sessionId)
           }
@@ -130,20 +147,20 @@ function connectToProcess(data) {
   return
 }
 
-
-
 function stopFfmpeg(sessionId) {
   pm2.delete(sessionId)
   sendMessageToClient(sessionId, 'Process stopped', 'finished')
   return
 }
 
-function startTimeoutCounter(sessionId) {
-  setTimeout( function() {
-    stopFfmpeg(sessionId); 
-    sendMessageToClient( sessionId, "Session Ended - Your File Is Longer Than 3 Hours", 'finished')
-  }, sessionTimeoutInMs );
-}
+//
+// Routes
+//
+
+app.post('/newUserId', async function (req, res) {
+  console.log("new user connected")
+  return res.json(generateNewId())
+})
 
 app.post('/startffmpeg', async function (req) {
   var stream = req.body
@@ -159,12 +176,6 @@ app.post('/stopffmpeg', function (req) {
   stopFfmpeg(req.body.sessionId)
   return sendMessageToClient(sessionId, 'Request received', 'processing')
 });
-
-// Gives a new user an ID.
-app.post('/newUserId', async function (req, res) {
-  console.log("new user connected")
-  return res.json(generateNewId())
-})
 
 
 //
