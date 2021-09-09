@@ -28,7 +28,7 @@ async function start(body) {
 	.videoBitrate('4500k')
 	.format('flv')
 	.save(body.rtmp+'/'+body.key)
-	.withOutputFps(30)
+	.withOutputFps(29.97)
 
 	.on('start', function(commandLine) {
 		replyToServer('Started command', 'processing')
