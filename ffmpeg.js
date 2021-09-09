@@ -26,12 +26,8 @@ async function start(body) {
 	inputs.forEach(input => stream.input(input))
 	stream.inputOption('-re')
 	.videoBitrate('9600k')
-	.videoCodec('libx264')
-	.audioCodec('aac')
 	.toFormat('flv')
 	.save(body.rtmp+'/'+body.key)
-	.size('1920x1080')
-	.aspect('16:9')
 
 
 	.on('start', function(commandLine) {
