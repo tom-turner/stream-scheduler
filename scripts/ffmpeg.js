@@ -23,7 +23,14 @@ function replyToServer(message, status){
 async function start(body) {
 
 	var inputs = await getStreamableUrl(body.file)
-	inputs.forEach(input => stream.input(input))
+	inputs.forEach(input => exec(`ffmpeg -re -i ${input(input)} -c:v libx264 -preset veryfast -b:v 3000k -maxrate 3000k \
+		-bufsize 6000k -pix_fmt yuv420p -g 50 -c:a aac -b:a 160k -ac 2 \
+		-ar 44100 -f flv ${body.rtmp+'/'+body.key}`)
+ 	)
+	
+	  
+
+	/*
 	stream.inputOption('-re')
 	.videoBitrate('9600k')
 	.toFormat('flv')
@@ -45,4 +52,5 @@ async function start(body) {
 	.on('end', function() {
 		replyToServer("File has ended", 'finished' )
 	})
+	*/
 }
