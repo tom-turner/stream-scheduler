@@ -5,7 +5,7 @@ const http = require('http').Server(app);
 const bp = require('body-parser');
 const pm2 = require('pm2')
 const io = require('socket.io')(http);
-const port = process.env.port || 5000;
+const port = process.env.port || 5300;
 const sessionTimeoutInMs = 10800000
 
 app.use(bp.json())
@@ -181,6 +181,6 @@ app.post('/stopffmpeg', function (req) {
 //
 // Starting the App
 //
-const server = http.listen(process.env.PORT || 5000, function() {
-  console.log('listening on *:5000');
+const server = http.listen( port, function() {
+  console.log('listening on *:'+port);
 });
