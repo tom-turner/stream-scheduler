@@ -33,7 +33,6 @@ async function start(body) {
 	.size('1920x1080')
 	.aspect('16:9')
 	.fps(50)
-	.keepDAR()
 
 	.on('start', function(commandLine) {
 		replyToServer('Started command', 'processing')
