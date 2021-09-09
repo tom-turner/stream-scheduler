@@ -29,6 +29,7 @@ async function start(body) {
 	.videoBitrate('9600k')
 	.format('flv')
 	.save(body.rtmp+'/'+body.key)
+	.videoCodec('libx264')
 	.size('1920x1080')
 	.aspect('16:9')
 	.fps(50)
