@@ -25,10 +25,9 @@ async function start(body) {
 	var inputs = await getStreamableUrl(body.file)
 	inputs.forEach(input => stream.input(input))
 	stream.inputOption('-re')
-	.videoBitrate('4500k')
+	.videoBitrate('6500k')
 	.format('flv')
 	.save(body.rtmp+'/'+body.key)
-	.withOutputFps(29.97)
 
 	.on('start', function(commandLine) {
 		replyToServer('Started command', 'processing')
