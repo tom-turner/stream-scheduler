@@ -5,9 +5,8 @@ const http = require('http').Server(app);
 const bp = require('body-parser');
 const pm2 = require('pm2')
 const io = require('socket.io')(http);
-const { exec } = require('child_process');
 const port = process.env.port || 5300;
-const sessionTimeoutInMs = 108000000
+const sessionTimeoutInMs = 10800000
 
 app.use(bp.json())
 app.use(bp.urlencoded({ extended: true }))
@@ -81,7 +80,7 @@ function startFfmpeg(data) {
 
   pm2.start({
     name   : sessionId,
-    script: 'scripts/ffmpeg.js',
+    script: 'ffmpeg.js',
   }, (err, apps) => {
     connectToProcess(data)
     if (err) { 
