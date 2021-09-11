@@ -27,6 +27,7 @@ async function start(body) {
 	stream.inputOption('-re')
 	.videoBitrate('9600k')
 	.toFormat('flv')
+  	.videoCodec('copy')
 	.save(body.rtmp+'/'+body.key)
 
 
